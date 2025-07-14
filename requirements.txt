@@ -1,11 +1,7 @@
-# -------------------------------
-# Core ML/DL Framework (PyTorch)
-# -------------------------------
-torch==2.1.2
-torchvision==0.16.2
+# We DO NOT specify torch or torchvision. We will use Kaggle's native versions.
 
 # -------------------------------
-# Hugging Face Ecosystem
+# Hugging Face Ecosystem & GPU
 # -------------------------------
 diffusers==0.27.2
 transformers==4.40.1
@@ -13,17 +9,13 @@ accelerate==0.29.3
 xformers==0.0.23.post1
 
 # -------------------------------
-# Image Processing
+# Image Processing & UI
 # -------------------------------
-opencv-python-headless==4.9.0.80
-Pillow==10.3.0
-
-# -------------------------------
-# Deployment & UI
-# -------------------------------
+opencv-python-headless
+Pillow
 gradio==4.29.0
 
 # -------------------------------
-# Experiment Tracking (Optional)
+# Experiment Tracking
 # -------------------------------
-wandb==0.16.6
+wandb
