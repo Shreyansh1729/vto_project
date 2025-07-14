@@ -8,8 +8,8 @@ from torchvision import transforms
 class VitonHDDataset(Dataset):
     """
     Custom PyTorch Dataset for the VITON-HD dataset.
-    This class handles loading of image pairs (person, cloth) and their
-    corresponding metadata for the virtual try-on task.
+    This class handles loading of image pairs (person, cloth) and all 
+    necessary conditioning images for the ControlNet model.
     """
     def __init__(self, data_root, mode='train', image_size=(512, 384)):
         """
@@ -36,11 +36,18 @@ class VitonHDDataset(Dataset):
         self.data_frame = pd.read_csv(pair_list_path, sep=' ', header=None)
         self.data_frame.columns = ['person_id', 'cloth_id']
 
-        # Define the image transformations
-        self.transform = transforms.Compose([
+        # --- Define Image Transformations ---
+        # Transform for color images (person, cloth, pose map)
+        self.transform_rgb = transforms.Compose([
             transforms.Resize(self.image_size, interpolation=transforms.InterpolationMode.BILINEAR),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # Normalize to [-1, 1]
+        ])
+
+        # Transform for single-channel masks
+        self.transform_mask = transforms.Compose([
+            transforms.Resize(self.image_size, interpolation=transforms.InterpolationMode.NEAREST),
+            transforms.ToTensor() # Normalize to [0, 1]
         ])
 
     def __len__(self):
@@ -50,35 +57,50 @@ class VitonHDDataset(Dataset):
     def __getitem__(self, index):
         """
         Retrieves a single data item (person image, cloth image, etc.) at a given index.
-        
-        Args:
-            index (int): The index of the data item to retrieve.
-            
-        Returns:
-            dict: A dictionary containing all the necessary data for one training step.
         """
         # Get the person and cloth IDs from the dataframe
         person_id = self.data_frame.iloc[index]['person_id']
         cloth_id = self.data_frame.iloc[index]['cloth_id']
 
-        # --- Load Person Image ---
-        person_image_path = os.path.join(self.data_root, self.mode, 'image', person_id)
+        # --- Define all file paths ---
+        base_path = os.path.join(self.data_root, self.mode)
+        
+        # RGB images
+        person_image_path = os.path.join(base_path, 'image', person_id)
+        cloth_image_path = os.path.join(base_path, 'cloth', cloth_id)
+        pose_map_path = os.path.join(base_path, 'openpose_img', person_id.replace('.jpg', '.png'))
+
+        # Mask images (single channel)
+        # Note: The dataset uses different extensions for masks, so we must replace them.
+        person_parse_path = os.path.join(base_path, 'image-parse-v3', person_id.replace('.jpg', '.png'))
+        cloth_mask_path = os.path.join(base_path, 'cloth-mask', cloth_id) # The cloth mask is often needed
+        
+        # --- Load and Transform all images ---
+        
+        # Load RGB images
         person_image = Image.open(person_image_path).convert('RGB')
-
-        # --- Load Cloth Image ---
-        cloth_image_path = os.path.join(self.data_root, self.mode, 'cloth', cloth_id)
         cloth_image = Image.open(cloth_image_path).convert('RGB')
+        pose_map = Image.open(pose_map_path).convert('RGB')
         
-        # Apply transformations to images
-        person_image_tensor = self.transform(person_image)
-        cloth_image_tensor = self.transform(cloth_image)
+        # Load single-channel masks
+        person_parse_mask = Image.open(person_parse_path).convert('L') # 'L' for grayscale
+        cloth_mask = Image.open(cloth_mask_path).convert('L')
 
-        # We will add more data points (masks, pose maps) here in later steps.
-        # For now, we return the essential items.
+        # Apply transformations
+        person_image_tensor = self.transform_rgb(person_image)
+        cloth_image_tensor = self.transform_rgb(cloth_image)
+        pose_map_tensor = self.transform_rgb(pose_map)
         
+        person_parse_tensor = self.transform_mask(person_parse_mask)
+        cloth_mask_tensor = self.transform_mask(cloth_mask)
+        
+        # Return a dictionary with all the data
         return {
             'person_id': person_id,
             'cloth_id': cloth_id,
             'person_image': person_image_tensor,
             'cloth_image': cloth_image_tensor,
+            'pose_map': pose_map_tensor,
+            'person_parse_mask': person_parse_tensor,
+            'cloth_mask': cloth_mask_tensor,
         }
