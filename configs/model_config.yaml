@@ -1,0 +1,45 @@
+# Configuration for the VTO Training Experiment
+
+# --- 1. Data Configuration ---
+data:
+  data_root: "/kaggle/input/my-viton-hd-1/" # The root path of the dataset in the Kaggle environment
+  height: 512
+  width: 384
+  num_workers: 2 # Number of parallel threads for data loading
+
+# --- 2. Model Paths Configuration ---
+# We will use a stable, well-known version of Stable Diffusion as our base.
+# 'runwayml/stable-diffusion-v1-5' is a great choice.
+model:
+  # The main U-Net for image generation
+  unet_path: "runwayml/stable-diffusion-v1-5"
+  subfolder: "unet" # Specify the subfolder within the repo
+
+  # The VAE for encoding/decoding images to/from the latent space
+  vae_path: "runwayml/stable-diffusion-v1-5"
+  subfolder_vae: "vae"
+
+  # Tokenizer and Text Encoder for processing text prompts
+  tokenizer_path: "runwayml/stable-diffusion-v1-5"
+  subfolder_tokenizer: "tokenizer"
+  text_encoder_path: "runwayml/stable-diffusion-v1-5"
+  subfolder_text_encoder: "text_encoder"
+
+  # Noise scheduler
+  scheduler_path: "runwayml/stable-diffusion-v1-5"
+  subfolder_scheduler: "scheduler"
+
+  # The pre-trained ControlNet for human pose
+  controlnet_path: "lllyasviel/control_v11p_sd15_openpose"
+
+
+# --- 3. Training Configuration ---
+training:
+  num_epochs: 10
+  batch_size: 4  # This is a safe starting point for a P100 GPU with 16GB VRAM.
+  learning_rate: 1.0e-4 # A standard learning rate for fine-tuning with AdamW.
+  
+# --- 4. Output Configuration ---
+output:
+  checkpoints_dir: "/kaggle/working/vto_project/checkpoints"
+  # We will add more logging options (like wandb) here later.
