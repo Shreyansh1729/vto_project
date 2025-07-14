@@ -20,7 +20,7 @@ build/
 
 # Data
 # We will never commit data to the repo.
-data/
+/data/
 
 # Notebook Checkpoints
 .ipynb_checkpoints
