@@ -68,8 +68,7 @@ class VitonHDDataset(Dataset):
         # RGB images
         person_image_path = os.path.join(base_path, 'image', person_id)
         cloth_image_path = os.path.join(base_path, 'cloth', cloth_id)
-        pose_map_path = os.path.join(base_path, 'openpose_img', person_id.replace('.jpg', '.png'))
-
+        pose_map_path = os.path.join(base_path, 'openpose_img', person_id.replace('.jpg', '_rendered.png'))
         # Mask images (single channel)
         # Note: The dataset uses different extensions for masks, so we must replace them.
         person_parse_path = os.path.join(base_path, 'image-parse-v3', person_id.replace('.jpg', '.png'))
