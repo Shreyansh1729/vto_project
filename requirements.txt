@@ -1,25 +1,30 @@
-# Config & Data Handling
-pyyaml
-pandas
+--upgrade
 
-# Core ML/DL Framework
-# We specify the torch version to ensure compatibility on Kaggle
+# -------------------------------
+# Core ML/DL Framework (PyTorch)
+# -------------------------------
 torch==2.1.2
 torchvision==0.16.2
 
+# -------------------------------
 # Hugging Face Ecosystem
-# The essential libraries for our models and pipeline
+# -------------------------------
 diffusers==0.27.2
-transformers==4.40.1
 accelerate==0.29.3
-xformers==0.0.23.post1
+# xformers is disabled for now to simplify installation
 
+# -------------------------------
 # Image Processing
+# -------------------------------
 opencv-python-headless==4.9.0.80
 Pillow==10.3.0
 
+# -------------------------------
 # Deployment & UI
+# -------------------------------
 gradio==4.29.0
 
-# Experiment Tracking
-wandb==0.17.0
+# -------------------------------
+# Experiment Tracking (Optional)
+# -------------------------------
+wandb==0.16.6
