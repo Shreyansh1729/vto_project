@@ -1,5 +1,3 @@
---upgrade
-
 # -------------------------------
 # Core ML/DL Framework (PyTorch)
 # -------------------------------
@@ -10,8 +8,9 @@ torchvision==0.16.2
 # Hugging Face Ecosystem
 # -------------------------------
 diffusers==0.27.2
+transformers==4.40.1
 accelerate==0.29.3
-# xformers is disabled for now to simplify installation
+xformers==0.0.23.post1
 
 # -------------------------------
 # Image Processing
