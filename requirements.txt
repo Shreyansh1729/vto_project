@@ -1,0 +1,2 @@
+# Core libraries for local development and config management
+pyyaml

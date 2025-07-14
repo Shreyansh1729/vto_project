@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+*.egg-info/
+dist/
+build/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Data
+# We will never commit data to the repo.
+data/
+
+# Notebook Checkpoints
+.ipynb_checkpoints
+
+# Logs & Output
+*.log
+*.pth
+*.pt
+checkpoints/
+output/
