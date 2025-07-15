@@ -4,6 +4,6 @@ torchvision==0.18.1
 diffusers==0.28.0
 transformers==4.41.2
 accelerate==0.30.1
-xformers
+# xformers will be installed separately in the notebook.
 gradio
 wandb
