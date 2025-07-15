@@ -4,7 +4,7 @@ import yaml
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from diffusers import DDPMScheduler, AutoencoderKL
+from diffusers import DDPMScheduler, AutoencoderKL, UNet2DConditionModel, ControlNetModel
 from transformers import CLIPTextModel, CLIPTokenizer
 
 from src.data.viton_hd_dataset import VitonHDDataset
@@ -47,36 +47,30 @@ def main(config):
     noise_scheduler = DDPMScheduler.from_pretrained(config['model']['scheduler_path'], subfolder=config['model']['subfolder_scheduler'])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    tryon_model.to(device) # Move the entire pipeline to the GPU
+    tryon_model.to(device)
 
     # --- 6. Training Loop ---
     print("\n--- Starting Training Loop ---")
     for epoch in range(config['training']['num_epochs']):
-        tryon_model.garment_adapter.train() # Ensure adapter is in training mode
+        tryon_model.garment_adapter.train()
         
         progress_bar = tqdm(train_dataloader, desc=f"Epoch {epoch+1}")
         
         for step, batch in enumerate(progress_bar):
-            # Move all data to the GPU
-            person_image = batch['person_image'].to(device)
-            cloth_image = batch['cloth_image'].to(device)
-            pose_map = batch['pose_map'].to(device)
-            
-            # The entire forward pass happens inside the no_grad context for the non-trainable parts
             with torch.no_grad():
-                # Create dummy text embeddings
+                person_image = batch['person_image'].to(device)
+                cloth_image = batch['cloth_image'].to(device)
+                pose_map = batch['pose_map'].to(device)
+                
                 text_input = tokenizer([""] * person_image.shape[0], padding="max_length", max_length=tokenizer.model_max_length, truncation=True, return_tensors="pt").input_ids
                 text_embeddings = text_encoder(text_input.to(device))[0]
                 
-                # Encode the person image to get the primary latents
                 latents = tryon_model.vae.encode(person_image).latent_dist.sample() * tryon_model.vae.config.scaling_factor
 
-                # Prepare for the diffusion process
-                noise = torch.randn_like(latents)
-                timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (latents.shape[0],), device=device).long()
-                noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
+            noise = torch.randn_like(latents)
+            timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (latents.shape[0],), device=device).long()
+            noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
             
-            # --- Main Forward Pass (this is the only part that needs gradients for the adapter) ---
             noise_pred = tryon_model(
                 latents=noisy_latents,
                 timestep=timesteps,
@@ -85,10 +79,8 @@ def main(config):
                 cloth_image=cloth_image
             )
             
-            # Calculate loss
             loss = torch.nn.functional.mse_loss(noise_pred, noise)
             
-            # Backpropagation
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
