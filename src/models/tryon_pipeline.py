@@ -6,18 +6,13 @@ from .garment_adapter import GarmentAdapter
 
 class TryOnPipeline(nn.Module):
     """
-    The main model that orchestrates the virtual try-on process.
+    The main model with corrected feature fusion logic.
     """
     def __init__(self, unet_path, unet_subfolder, controlnet_path):
         super().__init__()
 
-        print("Loading pre-trained U-Net...")
-        self.unet = UNet2DConditionModel.from_pretrained(unet_path, subfolder=unet_subfolder)
-        
-        print("Loading pre-trained ControlNet...")
+        self.unet = UNet2DCondoptionModel.from_pretrained(unet_path, subfolder=unet_subfolder)
         self.controlnet = ControlNetModel.from_pretrained(controlnet_path)
-
-        print("Initializing Garment Adapter...")
         self.garment_adapter = GarmentAdapter()
 
         self.unet.eval()
@@ -31,29 +26,42 @@ class TryOnPipeline(nn.Module):
         latents: torch.Tensor,
         timestep: int,
         encoder_hidden_states: torch.Tensor,
-        controlnet_cond: torch.Tensor, # This is the pose map
+        controlnet_cond: torch.Tensor,
         cloth_image: torch.Tensor,
     ):
-        # 1. Get pose guidance from the ControlNet
+        # 1. Get pose guidance from ControlNet
         controlnet_down_res, controlnet_mid_res = self.controlnet(
             sample=latents,
             timestep=timestep,
             encoder_hidden_states=encoder_hidden_states,
-            controlnet_cond=controlnet_cond, # THE CORRECTED KEYWORD
-            return_dict=False
+            controlnet_cond=controlnet_cond,
+            return_dict=False,
         )
-        
-        # NOTE: Placeholder logic for garment features
-        # We will properly implement this after we get the training loop running.
-        # For now, we will not use the garment_adapter's output.
 
-        # 2. Pass to the main U-Net
+        # 2. Get clothing features from our Garment Adapter
+        # Note: We need to resize the cloth image to match the latent space dimensions
+        # before passing it to the adapter.
+        cloth_latents = torch.nn.functional.interpolate(cloth_image, size=(64, 48), mode='bilinear')
+        garment_features = self.garment_adapter(cloth_latents)
+        
+        # The adapter gives features for down blocks, we use the ControlNet's mid-block feature
+        garment_down_res = garment_features
+        garment_mid_res = torch.zeros_like(controlnet_mid_res) # Placeholder for now
+
+        # 3. Combine the residuals
+        # We iterate through the list of tensors and add them element-wise
+        combined_down_residuals = [
+            c_res + g_res for c_res, g_res in zip(controlnet_down_res, garment_down_res)
+        ]
+        combined_mid_residual = controlnet_mid_res + garment_mid_res
+        
+        # 4. Pass to the main U-Net
         noise_pred = self.unet(
             sample=latents,
             timestep=timestep,
             encoder_hidden_states=encoder_hidden_states,
-            down_block_additional_residuals=controlnet_down_res,
-            mid_block_additional_residual=controlnet_mid_res,
+            down_block_additional_residuals=combined_down_residuals,
+            mid_block_additional_residual=combined_mid_residual,
         ).sample
 
         return noise_pred

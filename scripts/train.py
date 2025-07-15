@@ -79,6 +79,7 @@ def main(config):
             with torch.no_grad():
                 text_input = tokenizer("", padding="max_length", max_length=tokenizer.model_max_length, truncation=True, return_tensors="pt").input_ids
                 text_embeddings = text_encoder(text_input.to(device))[0]
+                # FIX: Moved this line inside the no_grad block
                 latents = vae.encode(person_image).latent_dist.sample() * vae.config.scaling_factor
 
             noise = torch.randn_like(latents)

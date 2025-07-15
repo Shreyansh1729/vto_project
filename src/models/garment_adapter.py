@@ -1,60 +1,50 @@
 import torch
 import torch.nn as nn
+from typing import List
 
 class GarmentAdapter(nn.Module):
     """
-    A lightweight convolutional network designed to extract features from a garment image.
-    These features are then used to condition the main diffusion model (U-Net).
-    
-    The architecture consists of a series of downsampling convolutional blocks.
+    A more sophisticated GarmentAdapter that outputs feature maps at multiple resolutions,
+    matching the structure of a U-Net's downsampling path.
     """
     def __init__(
         self,
-        in_channels: int = 3,          # Input channels (3 for RGB cloth image)
-        model_channels: int = 320,     # The number of channels in the U-Net we are injecting into
-        num_layers: int = 3,           # Number of downsampling layers
-        num_groups: int = 32,          # Number of groups for GroupNorm
+        in_channels: int = 3,
+        model_channels: int = 320,
+        num_layers: int = 4, # We need 4 levels for Stable Diffusion 1.5
+        num_groups: int = 32,
     ):
         super().__init__()
         
-        # The initial convolution layer to bring the input image into the feature space
+        # Initial convolution
         self.conv_in = nn.Conv2d(in_channels, model_channels, kernel_size=3, padding=1)
         
         self.blocks = nn.ModuleList()
         
         # Build the downsampling blocks
-        for i in range(num_layers):
-            # Each block consists of two convolutions and a downsampling layer
+        for _ in range(num_layers):
             block = nn.Sequential(
                 nn.Conv2d(model_channels, model_channels, kernel_size=3, padding=1),
-                nn.GroupNorm(num_groups, model_channels),
-                nn.SiLU(), # Swish activation function
+                nn.GroupNorm(num_groups, model_channels), nn.SiLU(),
                 nn.Conv2d(model_channels, model_channels, kernel_size=3, padding=1),
-                nn.GroupNorm(num_groups, model_channels),
-                nn.SiLU(),
-                nn.Conv2d(model_channels, model_channels, kernel_size=3, stride=2, padding=1) # Downsampling
+                nn.GroupNorm(num_groups, model_channels), nn.SiLU(),
+                nn.Conv2d(model_channels, model_channels, kernel_size=3, stride=2, padding=1)
             )
             self.blocks.append(block)
 
-        # A final convolution to refine the output
-        self.conv_out = nn.Conv2d(model_channels, model_channels, kernel_size=3, padding=1)
-        
-    def forward(self, cloth_image: torch.Tensor) -> torch.Tensor:
+    def forward(self, cloth_image: torch.Tensor) -> List[torch.Tensor]:
         """
-        Processes the cloth image to extract feature maps.
-        
-        Args:
-            cloth_image (torch.Tensor): The input tensor of the cloth image.
-        
-        Returns:
-            torch.Tensor: The extracted feature map.
+        Processes the cloth image and returns a list of feature maps from each downsampling level.
         """
-        # 1. Initial convolution
+        feature_maps = []
         x = self.conv_in(cloth_image)
         
-        # 2. Pass through the downsampling blocks
+        # The first feature map is from the initial convolution
+        feature_maps.append(x)
+        
+        # Pass through the downsampling blocks and collect feature maps
         for block in self.blocks:
             x = block(x)
+            feature_maps.append(x)
             
-        # 3. Final convolution
-        return self.conv_out(x)
+        return feature_maps
