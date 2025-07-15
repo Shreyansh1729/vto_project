@@ -46,7 +46,7 @@ class TryOnPipeline(nn.Module):
             latents,
             timestep,
             encoder_hidden_states=encoder_hidden_states,
-            control_image=controlnet_cond,
+            image=controlnet_cond,
             return_dict=False
         )
 
