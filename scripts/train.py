@@ -34,11 +34,15 @@ def main(config):
     print("Freezing VAE and Text Encoder...")
     vae.requires_grad_(False)
     text_encoder.requires_grad_(False)
+
     
     trainable_params = list(tryon_model.garment_adapter.parameters())
     print(f"Number of trainable parameters: {sum(p.numel() for p in trainable_params if p.requires_grad):,}")
 
+    # --- 4. Setup Optimizer ---
     print("Setting up optimizer...")
+    # FIX: Create an empty list of parameters since nothing is being trained
+    trainable_params = [] 
     optimizer = torch.optim.AdamW(
         trainable_params,
         lr=config['training']['learning_rate']
