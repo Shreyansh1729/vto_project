@@ -11,7 +11,7 @@ class TryOnPipeline(nn.Module):
     def __init__(self, unet_path, unet_subfolder, controlnet_path):
         super().__init__()
 
-        self.unet = UNet2DCondoptionModel.from_pretrained(unet_path, subfolder=unet_subfolder)
+        self.unet = UNet2DCondotionModel.from_pretrained(unet_path, subfolder=unet_subfolder)
         self.controlnet = ControlNetModel.from_pretrained(controlnet_path)
         self.garment_adapter = GarmentAdapter()
 
