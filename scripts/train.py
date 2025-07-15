@@ -47,6 +47,9 @@ def main(config):
     noise_scheduler = DDPMScheduler.from_pretrained(config['model']['scheduler_path'], subfolder=config['model']['subfolder_scheduler'])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
+    
+    # CRITICAL FIX: Move the text_encoder to the GPU
+    text_encoder.to(device)
     tryon_model.to(device)
 
     # --- 6. Training Loop ---
@@ -63,6 +66,7 @@ def main(config):
                 pose_map = batch['pose_map'].to(device)
                 
                 text_input = tokenizer([""] * person_image.shape[0], padding="max_length", max_length=tokenizer.model_max_length, truncation=True, return_tensors="pt").input_ids
+                # The text_encoder is now on the GPU, so this will work
                 text_embeddings = text_encoder(text_input.to(device))[0]
                 
                 latents = tryon_model.vae.encode(person_image).latent_dist.sample() * tryon_model.vae.config.scaling_factor
