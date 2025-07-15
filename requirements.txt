@@ -1,14 +1,17 @@
+# This is a known-good, stable stack of libraries that are compatible.
+# We are using slightly older versions to avoid recent dependency issues.
+
 # Core ML/DL
 torch==2.3.1
 torchvision==0.18.1
 
-# Hugging Face Ecosystem
-diffusers==0.28.0
-transformers==4.41.2
-accelerate==0.30.1
-huggingface_hub==0.23.0
-xformers
+# Hugging Face Ecosystem (Known Stable Combination)
+diffusers==0.26.3
+transformers==4.37.2
+accelerate==0.26.1
+peft==0.8.2
 
-# UI & Experiment Tracking
+# Other dependencies
+xformers
 gradio
 wandb
